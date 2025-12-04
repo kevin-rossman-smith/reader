@@ -21,6 +21,8 @@
     columnGapValue: document.getElementById("column-gap-value"),
     prev: document.getElementById("prev-page"),
     next: document.getElementById("next-page"),
+    optionsPanel: document.getElementById("options-panel"),
+    toggleOptions: document.getElementById("toggle-options"),
     driveAuthBtn: document.getElementById("drive-auth-btn"),
     driveSignoutBtn: document.getElementById("drive-signout-btn"),
     driveListBtn: document.getElementById("drive-list-btn"),
@@ -202,6 +204,7 @@
 
     setupDragAndDrop();
     renderContent(sampleContent);
+    applyTheme("lamp");
   };
 
   const driveConfigured = () =>
@@ -217,6 +220,17 @@
         ? "Drive ready: click “Sign in with Drive” then list files."
         : "Add your Google Client ID/API key in app.js to enable Drive."
     );
+  };
+
+  const toggleOptionsPanel = () => {
+    const isHidden = els.optionsPanel.hasAttribute("hidden");
+    if (isHidden) {
+      els.optionsPanel.removeAttribute("hidden");
+      els.toggleOptions.setAttribute("aria-expanded", "true");
+    } else {
+      els.optionsPanel.setAttribute("hidden", "");
+      els.toggleOptions.setAttribute("aria-expanded", "false");
+    }
   };
 
   const handleDriveAuth = () => {
@@ -338,6 +352,12 @@
       if (window.gapi && !gapiReady) window.gapiLoaded();
       if (window.google && !gisReady) window.gisLoaded();
     });
+
+    // Explicitly listen for script load events in case they finish after onload.
+    const gapiScript = document.querySelector('script[src*="apis.google.com/js/api.js"]');
+    if (gapiScript) gapiScript.addEventListener("load", () => !gapiReady && window.gapiLoaded());
+    const gisScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (gisScript) gisScript.addEventListener("load", () => !gisReady && window.gisLoaded());
   };
 
   const initDriveControls = () => {
@@ -347,7 +367,12 @@
     els.driveRevokeBtn.addEventListener("click", handleDriveSignout);
   };
 
+  const initOptionsToggle = () => {
+    els.toggleOptions.addEventListener("click", toggleOptionsPanel);
+  };
+
   initLocalControls();
+  initOptionsToggle();
   initDriveControls();
   exposeGoogleHooks();
 })();
