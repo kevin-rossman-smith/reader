@@ -2,144 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reader | Lamp mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Text Pager</title>
   <link rel="stylesheet" href="styles.css">
-  <script>
-    // place holders so google scripts calling onload won't error before app.js registers handlers
-    window.gapiLoaded = window.gapiLoaded || function () {};
-    window.gisLoaded = window.gisLoaded || function () {};
-  </script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://apis.google.com/js/api.js" async defer></script>
+  <script defer src="lib/jszip.min.js"></script>
   <script defer src="app.js"></script>
 </head>
-<body class="theme-lamp">
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true"></div>
-      <div>
-        <div class="brand-name">Reader</div>
-        <div class="brand-subtle">lamp-lit</div>
-      </div>
-    </div>
+<body>
+  <header class="top">
+    <span id="status" class="status">Load a large text file to begin.</span>
     <div class="top-actions">
-      <button class="icon-btn" id="toggle-options" aria-expanded="false" aria-controls="options-panel" title="View & typography">☰</button>
-      <button class="ghost" id="drive-auth-btn">Sign in with Drive</button>
-      <button class="ghost" id="drive-signout-btn" hidden>Sign out</button>
+      <button id="bookmark-btn" class="btn ghost" aria-label="Save bookmark">🔖</button>
+      <button id="drawer-toggle" class="btn ghost icon-btn" aria-label="More options">⋯</button>
     </div>
   </header>
 
-  <main class="layout">
-    <section class="reader-shell">
-      <div class="primary-bar">
-        <div>
-          <h1 id="book-title">Sample: Through the Pines</h1>
-          <p class="muted" id="book-meta">~4 min read • 5 chapters</p>
-        </div>
-        <div class="status muted" id="status">Drop a file or load the sample to start reading.</div>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <h3>Library & Tools</h3>
+      <button id="drawer-close" class="btn ghost icon-btn" aria-label="Close drawer">✕</button>
+    </div>
+    <div class="drawer-section">
+      <h4>
+        <label class="upload" title="Import file">
+          <input type="file" id="file-input" accept=".txt,.md,.markdown,.epub">
+          <span class="btn pill-btn">Import file</span>
+        </label>
+      </h4>
+    </div>
+    <div class="drawer-section">
+      <h4>Books</h4>
+      <input id="book-search" class="search" type="search" placeholder="Search books…" aria-label="Search books">
+      <div class="scroll-area books-scroll">
+        <div id="book-list" class="book-table"></div>
       </div>
-
-      <div class="input-row">
-        <label class="visually-hidden" for="file-input">Local file</label>
-        <input type="file" id="file-input" accept=".txt,.md,.markdown,.html,.htm">
-        <button class="ghost" id="sample-btn">Load sample</button>
-        <button class="ghost" id="drive-list-btn" disabled>Drive files</button>
-        <button class="ghost" id="drive-revoke-btn" disabled>Revoke</button>
+    </div>
+    <div class="drawer-section">
+      <h4>Bookmarks</h4>
+      <div class="scroll-area bookmarks-scroll">
+        <div id="bookmark-list" class="pill-list empty-note">No bookmarks yet.</div>
       </div>
-
-      <div id="drop-zone" class="drop-zone" aria-label="Drop a file to read">
-        Drop text/markdown/HTML or pick a file above.
+    </div>
+    <div class="drawer-section">
+      <h4>Themes</h4>
+      <div class="pill-list" id="theme-buttons">
+        <button class="pill-btn theme-btn" data-theme="lamp">Lamp</button>
+        <button class="pill-btn theme-btn" data-theme="slate">Slate</button>
+        <button class="pill-btn theme-btn" data-theme="fern">Fern</button>
       </div>
+    </div>
+  </aside>
 
-      <div class="book-shell">
-        <div class="page-container" id="page-container" tabindex="0" aria-label="Reader pages">
-          <div class="page-scroller" id="page-scroller"></div>
-        </div>
-        <div class="page-nav">
-          <button class="nav-btn" id="prev-page" aria-label="Previous page">⟵</button>
-          <div class="page-indicator">
-            <span id="current-page">1</span>
-            <span class="muted">/</span>
-            <span id="total-pages">1</span>
-          </div>
-          <div class="nav-right">
-            <button class="nav-btn" id="enter-fullscreen" aria-label="Full-screen reader" title="Full-screen reader">⤢</button>
-            <button class="nav-btn" id="next-page" aria-label="Next page">⟶</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="options-panel" class="options-panel" hidden>
-      <div class="section-header">
-        <h2>View</h2>
-        <span class="muted tiny">Tweak only when needed.</span>
-      </div>
-      <div class="block">
-        <div class="chip-row" id="theme-picker">
-          <button class="chip active" data-theme="lamp">Lamp</button>
-          <button class="chip" data-theme="paper">Paper</button>
-          <button class="chip" data-theme="dusk">Dusk</button>
-          <button class="chip" data-theme="night">Night</button>
-          <button class="chip" data-theme="forest">Forest</button>
-        </div>
-      </div>
-      <div class="block grid-2">
-        <label class="block-label" for="font-size">Font size</label>
-        <div class="slider-row">
-          <input type="range" id="font-size" min="14" max="22" value="18">
-          <span class="slider-value" id="font-size-value">18px</span>
-        </div>
-
-        <label class="block-label" for="line-height">Line height</label>
-        <div class="slider-row">
-          <input type="range" id="line-height" min="140" max="190" value="160">
-          <span class="slider-value" id="line-height-value">1.6</span>
-        </div>
-
-        <label class="block-label" for="page-padding">Page padding</label>
-        <div class="slider-row">
-          <input type="range" id="page-padding" min="12" max="48" value="28">
-          <span class="slider-value" id="page-padding-value">28px</span>
-        </div>
-
-        <label class="block-label" for="column-gap">Column gap</label>
-        <div class="slider-row">
-          <input type="range" id="column-gap" min="16" max="64" value="32">
-          <span class="slider-value" id="column-gap-value">32px</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="drive-panel">
-      <div class="section-header">
-        <h2>Drive picks</h2>
-        <p class="muted tiny">Sign in to fetch recent text-friendly files.</p>
-      </div>
-      <ul id="drive-files" class="drive-list"></ul>
-    </section>
+  <main>
+    <div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+      <div class="spinner"></div>
+    </div>
+    <div id="page-container" class="page-container" tabindex="0" aria-label="Reader pages">
+      <div id="page-scroller" class="page-scroller"></div>
+    </div>
+    <div class="nav">
+      <button id="prev" aria-label="Previous page"></button>
+      <div class="page-indicator"><span id="current-page">1</span> / <span id="total-pages">1</span></div>
+      <button id="next" aria-label="Next page"></button>
+    </div>
   </main>
-
-  <section id="fullscreen-shell" class="fullscreen-shell" hidden>
-    <div class="fullscreen-chrome" id="fullscreen-chrome" hidden>
-      <div class="chrome-left">
-        <button class="ghost" id="exit-fullscreen">Exit</button>
-        <button class="ghost" id="fs-toggle-options">View</button>
-      </div>
-      <div class="page-indicator">
-        <span id="fs-current-page">1</span>
-        <span class="muted">/</span>
-        <span id="fs-total-pages">1</span>
-      </div>
-      <div class="chrome-right">
-        <button class="ghost" id="fs-prev-page" aria-label="Previous page">⟵</button>
-        <button class="ghost" id="fs-next-page" aria-label="Next page">⟶</button>
-      </div>
-    </div>
-    <div class="page-container fullscreen-container" id="fs-page-container" tabindex="0" aria-label="Full-screen reader pages">
-      <div class="page-scroller" id="fs-page-scroller"></div>
-    </div>
-  </section>
 </body>
 </html>
