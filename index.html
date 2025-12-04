@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reader | Calm, responsive book reader</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+  <script defer src="app.js"></script>
+</head>
+<body class="theme-paper">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <span class="brand-name">Reader</span>
+        <span class="brand-subtle">cozy edition</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="ghost" id="drive-auth-btn">Sign in with Drive</button>
+      <button class="ghost" id="drive-signout-btn" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="section-header">
+        <h2>Setup</h2>
+        <p class="muted">Load a file and tune the atmosphere.</p>
+      </div>
+
+      <div class="block">
+        <label class="block-label" for="file-input">Local file</label>
+        <div class="file-row">
+          <input type="file" id="file-input" accept=".txt,.md,.markdown,.html,.htm">
+          <button class="ghost" id="sample-btn">Load sample</button>
+        </div>
+        <div id="drop-zone" class="drop-zone" aria-label="Drop a file to read">
+          Drop a text/markdown file here
+        </div>
+        <p class="tiny muted">Formats: plain text, markdown, lightweight HTML. EPUB/PDF need preprocessing.</p>
+      </div>
+
+      <div class="block">
+        <label class="block-label" for="theme-picker">Color palette</label>
+        <div class="chip-row" id="theme-picker">
+          <button class="chip active" data-theme="paper">Paper</button>
+          <button class="chip" data-theme="sepia">Sepia</button>
+          <button class="chip" data-theme="dusk">Dusk</button>
+          <button class="chip" data-theme="night">Night</button>
+          <button class="chip" data-theme="forest">Forest</button>
+        </div>
+      </div>
+
+      <div class="block grid-2">
+        <label class="block-label" for="font-size">Font size</label>
+        <div class="slider-row">
+          <input type="range" id="font-size" min="14" max="22" value="18">
+          <span class="slider-value" id="font-size-value">18px</span>
+        </div>
+
+        <label class="block-label" for="line-height">Line height</label>
+        <div class="slider-row">
+          <input type="range" id="line-height" min="140" max="190" value="160">
+          <span class="slider-value" id="line-height-value">1.6</span>
+        </div>
+
+        <label class="block-label" for="page-padding">Page padding</label>
+        <div class="slider-row">
+          <input type="range" id="page-padding" min="12" max="48" value="28">
+          <span class="slider-value" id="page-padding-value">28px</span>
+        </div>
+
+        <label class="block-label" for="column-gap">Column gap</label>
+        <div class="slider-row">
+          <input type="range" id="column-gap" min="16" max="64" value="32">
+          <span class="slider-value" id="column-gap-value">32px</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel reader-panel">
+      <div class="section-header">
+        <div>
+          <h2 id="book-title">Sample: Through the Pines</h2>
+          <p class="muted" id="book-meta">~4 min read • 5 chapters</p>
+        </div>
+        <div class="tag">Responsive</div>
+      </div>
+
+      <div class="book-shell">
+        <div class="page-container" id="page-container" tabindex="0" aria-label="Reader pages">
+          <div class="page-scroller" id="page-scroller"></div>
+        </div>
+        <div class="page-nav">
+          <button class="nav-btn" id="prev-page" aria-label="Previous page">⟵</button>
+          <div class="page-indicator">
+            <span id="current-page">1</span>
+            <span class="muted">/</span>
+            <span id="total-pages">1</span>
+          </div>
+          <button class="nav-btn" id="next-page" aria-label="Next page">⟶</button>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <span id="status" class="muted">Drop a file or load the sample to start reading.</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-header">
+        <h2>Drive</h2>
+        <p class="muted">Sign in, fetch text-friendly files, and load them directly.</p>
+      </div>
+      <div class="block">
+        <div class="chip-row">
+          <button class="chip ghost" id="drive-list-btn" disabled>List Drive files</button>
+          <button class="chip ghost" id="drive-revoke-btn" disabled>Revoke token</button>
+        </div>
+        <p class="tiny muted">Uses Google Identity Services + Drive v3 (readonly). Add your Client ID/API key in <code>app.js</code>.</p>
+      </div>
+      <ul id="drive-files" class="drive-list"></ul>
+    </section>
+  </main>
+</body>
+</html>
