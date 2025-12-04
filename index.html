@@ -24,7 +24,7 @@
       </div>
     </div>
     <div class="top-actions">
-      <button class="icon-btn" id="toggle-options" aria-expanded="false" aria-controls="options-panel" title="Toggle view options">⦿</button>
+      <button class="icon-btn" id="toggle-options" aria-expanded="false" aria-controls="options-panel" title="View & typography">☰</button>
       <button class="ghost" id="drive-auth-btn">Sign in with Drive</button>
       <button class="ghost" id="drive-signout-btn" hidden>Sign out</button>
     </div>
@@ -63,7 +63,10 @@
             <span class="muted">/</span>
             <span id="total-pages">1</span>
           </div>
-          <button class="nav-btn" id="next-page" aria-label="Next page">⟶</button>
+          <div class="nav-right">
+            <button class="nav-btn" id="enter-fullscreen" aria-label="Full-screen reader" title="Full-screen reader">⤢</button>
+            <button class="nav-btn" id="next-page" aria-label="Next page">⟶</button>
+          </div>
         </div>
       </div>
     </section>
@@ -117,5 +120,26 @@
       <ul id="drive-files" class="drive-list"></ul>
     </section>
   </main>
+
+  <section id="fullscreen-shell" class="fullscreen-shell" hidden>
+    <div class="fullscreen-chrome" id="fullscreen-chrome" hidden>
+      <div class="chrome-left">
+        <button class="ghost" id="exit-fullscreen">Exit</button>
+        <button class="ghost" id="fs-toggle-options">View</button>
+      </div>
+      <div class="page-indicator">
+        <span id="fs-current-page">1</span>
+        <span class="muted">/</span>
+        <span id="fs-total-pages">1</span>
+      </div>
+      <div class="chrome-right">
+        <button class="ghost" id="fs-prev-page" aria-label="Previous page">⟵</button>
+        <button class="ghost" id="fs-next-page" aria-label="Next page">⟶</button>
+      </div>
+    </div>
+    <div class="page-container fullscreen-container" id="fs-page-container" tabindex="0" aria-label="Full-screen reader pages">
+      <div class="page-scroller" id="fs-page-scroller"></div>
+    </div>
+  </section>
 </body>
 </html>

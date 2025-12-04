@@ -11,10 +11,10 @@
   --shadow: 0 14px 38px rgba(0, 0, 0, 0.45);
   --font-body: "Iowan Old Style", "Palatino", "Book Antiqua", Georgia, serif;
   --font-ui: "Public Sans", "Inter", "SF Pro Text", -apple-system, system-ui, sans-serif;
-  --page-padding: 26px;
-  --column-gap: 28px;
-  --line-height: 1.6;
-  --font-size: 18px;
+  --reader-font-size: 18px;
+  --reader-line-height: 1.6;
+  --reader-page-padding: 26px;
+  --reader-column-gap: 28px;
 }
 
 *,
@@ -185,11 +185,12 @@ input[type="file"] {
 }
 
 .page-scroller {
-  padding: var(--page-padding);
+  padding: var(--reader-page-padding);
   column-width: clamp(320px, 48vw, 620px);
-  column-gap: var(--column-gap);
-  line-height: var(--line-height);
-  font-size: var(--font-size);
+  column-gap: var(--reader-column-gap);
+  column-fill: auto;
+  line-height: var(--reader-line-height);
+  font-size: var(--reader-font-size);
   font-family: var(--font-body);
   color: var(--text);
   text-rendering: optimizeLegibility;
@@ -235,6 +236,12 @@ input[type="file"] {
   gap: 6px;
   font-family: var(--font-ui);
   color: var(--muted);
+}
+
+.nav-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .options-panel {
@@ -401,6 +408,41 @@ input[type="range"] {
   .reader-shell {
     grid-row: span 2;
   }
+}
+
+/* Full-screen reader */
+.fullscreen-shell {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(120% 120% at 20% 20%, rgba(244, 154, 26, 0.12), transparent 45%),
+    radial-gradient(110% 110% at 80% 0%, rgba(150, 103, 56, 0.14), transparent 40%),
+    rgba(0, 0, 0, 0.9);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.fullscreen-container {
+  flex: 1;
+  max-height: none;
+}
+
+.fullscreen-chrome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(13, 9, 7, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.fullscreen-shell .page-indicator {
+  color: var(--text);
 }
 
 /* Themes */

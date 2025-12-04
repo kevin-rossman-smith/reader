@@ -23,6 +23,17 @@
     next: document.getElementById("next-page"),
     optionsPanel: document.getElementById("options-panel"),
     toggleOptions: document.getElementById("toggle-options"),
+    enterFullscreen: document.getElementById("enter-fullscreen"),
+    fullscreenShell: document.getElementById("fullscreen-shell"),
+    fullscreenChrome: document.getElementById("fullscreen-chrome"),
+    fsContainer: document.getElementById("fs-page-container"),
+    fsScroller: document.getElementById("fs-page-scroller"),
+    fsCurrentPage: document.getElementById("fs-current-page"),
+    fsTotalPages: document.getElementById("fs-total-pages"),
+    fsPrev: document.getElementById("fs-prev-page"),
+    fsNext: document.getElementById("fs-next-page"),
+    exitFullscreen: document.getElementById("exit-fullscreen"),
+    fsToggleOptions: document.getElementById("fs-toggle-options"),
     driveAuthBtn: document.getElementById("drive-auth-btn"),
     driveSignoutBtn: document.getElementById("drive-signout-btn"),
     driveListBtn: document.getElementById("drive-list-btn"),
@@ -50,7 +61,10 @@
   const state = {
     currentPage: 1,
     totalPages: 1,
+    fsCurrentPage: 1,
+    fsTotalPages: 1,
     bookName: "Sample: Through the Pines",
+    fullScreen: false,
   };
 
   const googleConfig = {
@@ -75,41 +89,60 @@
     return div.innerHTML;
   };
 
-  const renderContent = (text) => {
-    const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
-    if (!blocks.length) {
-      els.scroller.innerHTML = "<p>Nothing to display yet. Add a file or type some text.</p>";
-      updatePageMetrics();
-      return;
-    }
-
-    els.scroller.innerHTML = blocks.map((block) => `<p>${sanitizeParagraph(block)}</p>`).join("");
-    setStatus(`Loaded ${blocks.length} paragraphs. Use ← → or buttons to turn pages.`);
-    updatePageMetrics(1);
+  const views = {
+    primary: {
+      container: () => els.container,
+      scroller: () => els.scroller,
+      currentEl: () => els.currentPage,
+      totalEl: () => els.totalPages,
+      currentKey: "currentPage",
+      totalKey: "totalPages",
+    },
+    fullscreen: {
+      container: () => els.fsContainer,
+      scroller: () => els.fsScroller,
+      currentEl: () => els.fsCurrentPage,
+      totalEl: () => els.fsTotalPages,
+      currentKey: "fsCurrentPage",
+      totalKey: "fsTotalPages",
+    },
   };
 
-  const updatePageMetrics = (targetPage = state.currentPage) => {
-    const pageWidth = els.container.clientWidth || 1;
-    const total = Math.max(1, Math.round(els.scroller.scrollWidth / pageWidth));
-    state.totalPages = total;
-    els.totalPages.textContent = total;
-    goToPage(Math.min(targetPage, total));
+  const updateMetricsFor = (view, targetPage = 1) => {
+    const container = view.container();
+    const scroller = view.scroller();
+    if (!container || !scroller) return;
+    const pageWidth = container.clientWidth || 1;
+    const total = Math.max(1, Math.ceil(scroller.scrollWidth / pageWidth));
+    state[view.totalKey] = total;
+    view.totalEl().textContent = total;
+    goToPage(view, Math.min(targetPage, total));
   };
 
-  const goToPage = (page) => {
-    const clamped = Math.max(1, Math.min(page, state.totalPages));
-    const pageWidth = els.container.clientWidth || 1;
-    state.currentPage = clamped;
-    els.currentPage.textContent = clamped;
-    els.container.scrollTo({ left: pageWidth * (clamped - 1), behavior: "smooth" });
+  const updateAllPageMetrics = (targetPage = 1) => {
+    updateMetricsFor(views.primary, targetPage);
+    updateMetricsFor(views.fullscreen, targetPage);
   };
 
-  const handleScroll = () => {
-    const pageWidth = els.container.clientWidth || 1;
-    const calculated = Math.round(els.container.scrollLeft / pageWidth) + 1;
-    if (calculated !== state.currentPage) {
-      state.currentPage = calculated;
-      els.currentPage.textContent = calculated;
+  const goToPage = (view, page) => {
+    const container = view.container();
+    if (!container) return;
+    const pageWidth = container.clientWidth || 1;
+    const total = state[view.totalKey] || 1;
+    const clamped = Math.max(1, Math.min(page, total));
+    state[view.currentKey] = clamped;
+    view.currentEl().textContent = clamped;
+    container.scrollTo({ left: pageWidth * (clamped - 1), behavior: "smooth" });
+  };
+
+  const handleScroll = (view) => {
+    const container = view.container();
+    if (!container) return;
+    const pageWidth = container.clientWidth || 1;
+    const calculated = Math.round(container.scrollLeft / pageWidth) + 1;
+    if (calculated !== state[view.currentKey]) {
+      state[view.currentKey] = calculated;
+      view.currentEl().textContent = calculated;
     }
   };
 
@@ -120,15 +153,40 @@
     });
   };
 
+  const setReaderVar = (variable, value) => {
+    [els.scroller, els.fsScroller].forEach((target) => target?.style.setProperty(variable, value));
+  };
+
   const bindSlider = (input, display, unit, variable) => {
     const setValue = (value) => {
       display.textContent = unit === "ratio" ? (value / 100).toFixed(2) : `${value}px`;
       const cssValue = unit === "ratio" ? value / 100 : `${value}px`;
-      document.documentElement.style.setProperty(variable, cssValue);
-      updatePageMetrics();
+      setReaderVar(variable, cssValue);
+      updateAllPageMetrics(state.currentPage);
     };
     setValue(Number(input.value));
     input.addEventListener("input", (e) => setValue(Number(e.target.value)));
+  };
+
+  const syncFullscreenContent = () => {
+    els.fsScroller.innerHTML = els.scroller.innerHTML;
+  };
+
+  const renderContent = (text) => {
+    const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+    if (!blocks.length) {
+      const empty = "<p>Nothing to display yet. Add a file or type some text.</p>";
+      els.scroller.innerHTML = empty;
+      els.fsScroller.innerHTML = empty;
+      updateAllPageMetrics();
+      return;
+    }
+
+    const markup = blocks.map((block) => `<p>${sanitizeParagraph(block)}</p>`).join("");
+    els.scroller.innerHTML = markup;
+    syncFullscreenContent();
+    setStatus(`Loaded ${blocks.length} paragraphs. Use ← →, buttons, or swipe to turn pages.`);
+    requestAnimationFrame(() => updateAllPageMetrics(1));
   };
 
   const loadFile = (file) => {
@@ -180,27 +238,28 @@
       btn.addEventListener("click", () => applyTheme(btn.dataset.theme))
     );
 
-    bindSlider(els.fontSize, els.fontSizeValue, "px", "--font-size");
-    bindSlider(els.lineHeight, els.lineHeightValue, "ratio", "--line-height");
-    bindSlider(els.pagePadding, els.pagePaddingValue, "px", "--page-padding");
-    bindSlider(els.columnGap, els.columnGapValue, "px", "--column-gap");
+    bindSlider(els.fontSize, els.fontSizeValue, "px", "--reader-font-size");
+    bindSlider(els.lineHeight, els.lineHeightValue, "ratio", "--reader-line-height");
+    bindSlider(els.pagePadding, els.pagePaddingValue, "px", "--reader-page-padding");
+    bindSlider(els.columnGap, els.columnGapValue, "px", "--reader-column-gap");
 
-    els.prev.addEventListener("click", () => goToPage(state.currentPage - 1));
-    els.next.addEventListener("click", () => goToPage(state.currentPage + 1));
-    els.container.addEventListener("scroll", handleScroll);
+    els.prev.addEventListener("click", () => goToPage(views.primary, state.currentPage - 1));
+    els.next.addEventListener("click", () => goToPage(views.primary, state.currentPage + 1));
+    els.container.addEventListener("scroll", () => handleScroll(views.primary));
     els.container.addEventListener("keydown", (e) => {
       if (["ArrowLeft", "PageUp"].includes(e.key)) {
         e.preventDefault();
-        goToPage(state.currentPage - 1);
+        goToPage(views.primary, state.currentPage - 1);
       }
       if (["ArrowRight", "PageDown"].includes(e.key)) {
         e.preventDefault();
-        goToPage(state.currentPage + 1);
+        goToPage(views.primary, state.currentPage + 1);
       }
     });
 
-    const resizeObserver = new ResizeObserver(() => updatePageMetrics());
+    const resizeObserver = new ResizeObserver(() => updateAllPageMetrics(state.currentPage));
     resizeObserver.observe(els.container);
+    resizeObserver.observe(els.fsContainer);
 
     setupDragAndDrop();
     renderContent(sampleContent);
@@ -353,7 +412,6 @@
       if (window.google && !gisReady) window.gisLoaded();
     });
 
-    // Explicitly listen for script load events in case they finish after onload.
     const gapiScript = document.querySelector('script[src*="apis.google.com/js/api.js"]');
     if (gapiScript) gapiScript.addEventListener("load", () => !gapiReady && window.gapiLoaded());
     const gisScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
@@ -371,8 +429,74 @@
     els.toggleOptions.addEventListener("click", toggleOptionsPanel);
   };
 
+  const addSwipeNavigation = (element, view) => {
+    if (!element) return;
+    let startX = 0;
+    element.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+    });
+    element.addEventListener("touchend", (e) => {
+      const deltaX = e.changedTouches[0].clientX - startX;
+      if (Math.abs(deltaX) > 50) {
+        if (deltaX > 0) {
+          goToPage(view, state[view.currentKey] - 1);
+        } else {
+          goToPage(view, state[view.currentKey] + 1);
+        }
+      }
+    });
+  };
+
+  const enterFullscreen = () => {
+    state.fullScreen = true;
+    els.fullscreenShell.hidden = false;
+    els.fullscreenChrome.hidden = true;
+    syncFullscreenContent();
+    updateMetricsFor(views.fullscreen, state.currentPage);
+  };
+
+  const exitFullscreen = () => {
+    state.fullScreen = false;
+    els.fullscreenShell.hidden = true;
+    els.fullscreenChrome.hidden = true;
+  };
+
+  const initFullscreen = () => {
+    els.enterFullscreen.addEventListener("click", enterFullscreen);
+    els.exitFullscreen.addEventListener("click", exitFullscreen);
+    els.fsToggleOptions.addEventListener("click", toggleOptionsPanel);
+    els.fsPrev.addEventListener("click", () =>
+      goToPage(views.fullscreen, state[views.fullscreen.currentKey] - 1)
+    );
+    els.fsNext.addEventListener("click", () =>
+      goToPage(views.fullscreen, state[views.fullscreen.currentKey] + 1)
+    );
+
+    els.fullscreenShell.addEventListener("click", (e) => {
+      const chrome = els.fullscreenChrome;
+      if (
+        e.target === els.fullscreenShell ||
+        e.target === els.fsContainer ||
+        e.target === els.fsScroller
+      ) {
+        const isHidden = chrome.hasAttribute("hidden");
+        if (isHidden) {
+          chrome.removeAttribute("hidden");
+        } else {
+          chrome.setAttribute("hidden", "");
+        }
+      }
+    });
+
+    [els.container, els.fsContainer].forEach((el, idx) =>
+      addSwipeNavigation(el, idx === 0 ? views.primary : views.fullscreen)
+    );
+    els.fsContainer.addEventListener("scroll", () => handleScroll(views.fullscreen));
+  };
+
   initLocalControls();
   initOptionsToggle();
   initDriveControls();
+  initFullscreen();
   exposeGoogleHooks();
 })();
